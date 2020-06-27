@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>California</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+  <link href="style.css" rel="stylesheet" />
+  <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+</head>
+<body>
+  <h3>California Estimated R by County as of 26 June 2020</h3>
+  <!-- style="width: 350px; height: 350px;" -->
+  <div id="mapid" class="map" ></div>
+
+  <div class="canvas">
+    <canvas id="canvas" width="500px"></canvas>
+  </div>
+  <h4>References</h4>
+  <a href='https://github.com/daniel-kelley/ca-r'>Source</a>
+  <br/>
+  <a href='https://data.chhs.ca.gov/dataset/'>COVID-19 Data</a>
+  <br/>
+  <a href='https://eric.clst.org/tech/usgeojson/'>Cartographic Data</a>
+  <br/>
+  <a href='https://rviews.rstudio.com/2020/03/05/covid-19-epidemiology-with-r/'>Analysis</a>
+  <br/>
+  <a href='https://colorbrewer2.org/#type=sequential&scheme=RdPu&n=5'>Color Mapping</a>
+
+
+  <script src="CA_5m.js" type="text/javascript"></script>
+  <script src="app_data.js" type="text/javascript"></script>
+  <script src="ca_color.js" type="text/javascript"></script>
+
+  <script>
+    var mymap = L.map('mapid').setView([37.5, -120], 5);
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // convert estimated R to color
+    function est_R_colormap(n) {
+        for (var i=0; i<ca_color.length; i++) {
+            var est_r = ca_color[i];
+            if (n < est_r[0]) {
+                return est_r[1];
+            }
+        };
+        // backstop - unknown
+        return '#b1b1b1';
+    }
+
+    // convert estimated R to color
+    function est_R_colorkey(ctx) {
+        var prev_est_r = 0.0;
+        var swatch_x1 = 10;
+        var swatch_y1 = 10;
+        var swatch_w = 20;
+        var swatch_h = 20;
+        var label_x1 = 40;
+        var label_y1 = 25;
+        var shift_x = 200;
+        for (var i=0; i<ca_color.length; i++) {
+            var est_r = ca_color[i];
+            var color = est_r[1];
+            var cur_est_r = est_r[0];
+            var s = prev_est_r + ' <= R < ' + cur_est_r
+            ctx.fillStyle = color;
+            ctx.fillRect(swatch_x1, swatch_y1, swatch_h, swatch_w);
+            ctx.fillStyle = 'black';
+            ctx.fillText(s, label_x1, label_y1);
+            prev_est_r = cur_est_r;
+            swatch_y1 += swatch_h;
+            label_y1 += swatch_h;
+            if (i == 4) {
+                swatch_x1 += shift_x;
+                swatch_y1 = 10;
+                label_x1 += shift_x;
+                label_y1 = 25;
+            }
+        };
+
+        ctx.fillStyle = '#b1b1b1';
+        ctx.fillRect(swatch_x1, swatch_y1, swatch_h, swatch_w);
+        ctx.fillStyle = 'black';
+        ctx.fillText('Unknown', label_x1, label_y1);
+    }
+
+    est_R_colorkey(ctx)
+
+    function feature_info(feature) {
+        name = feature.properties.NAME;
+        s = '<br>County: '+name+'</br>';
+        s += '<br>estimated_R: '
+        s += app_data[name]['estimate_R_mean']
+        s += '(' +  app_data[name]['estimate_R_std'] + ')'  +'</br>';
+        s += '<br>Cumulative cases:'+app_data[name]['C']+'</br>';
+        s += '<a href="'+app_data[name]['detail']+'">Details</a>';
+
+        return s;
+    }
+
+    //JSON.stringify(feature, null, 2)
+    function onEachFeature(feature, layer) {
+        //bind click
+        layer.on('click', function (e) {
+        var popLocation= e.latlng;
+        var popup = L.popup()
+            .setLatLng(popLocation)
+            .setContent(feature_info(feature))
+            .openOn(mymap);
+        });
+    }
+
+    L.geoJSON(caGeo,{
+        style: function (feature) {
+            var data = app_data[feature.properties.NAME];
+            var color = est_R_colormap(data['estimate_R_mean']);
+            return {
+                "color": color,
+                "fill": color,
+                "fill-opacity": 1.0
+            }
+        },
+        onEachFeature: onEachFeature
+    }).addTo(mymap);
+</script>
+</body>
+</html>

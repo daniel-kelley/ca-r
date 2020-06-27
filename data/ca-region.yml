@@ -1,0 +1,68 @@
+#  https://www.labormarketinfo.edd.ca.gov/geography/regional-economic-profiles.html
+---
+Coastal:
+  - Monterey
+  - San Benito
+  - San Luis Obispo
+  - Santa Barbara
+  - Santa Cruz
+"Eastern Sierra":
+  - Amador
+  - Calaveras
+  - Inyo
+  - Mariposa
+  - Mono
+  - Tuolumne
+Northern:
+  - Butte
+  - Colusa
+  - Del Norte
+  - Glenn
+  - Humboldt
+  - Lassen
+  - Mendocino
+  - Modoc
+  - Plumas
+  - Shasta
+  - Sierra
+  - Siskiyou
+  - Tehama
+  - Trinity
+"SF Bay Area":
+  - Alameda
+  - Contra Costa
+  - Lake
+  - Marin
+  - Napa
+  - San Francisco
+  - San Mateo
+  - Santa Clara
+  - Solano
+  - Sonoma
+Sacramento:
+  - Alpine
+  - El Dorado
+  - Nevada
+  - Placer
+  - Sacramento
+  - Sutter
+  - Yolo
+  - Yuba
+"San Joaquin Valley":
+  - Fresno
+  - Kern
+  - Kings
+  - Madera
+  - Merced
+  - San Joaquin
+  - Stanislaus
+  - Tulare
+Southern:
+  - Los Angeles
+  - Orange
+  - Riverside
+  - San Bernardino
+  - Ventura
+"Southern Border":
+  - Imperial
+  - San Diego

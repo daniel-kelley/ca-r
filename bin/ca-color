@@ -1,0 +1,39 @@
+#!/usr/bin/env ruby
+#
+# ca-color
+#
+# https://colorbrewer2.org/#type=sequential&scheme=RdPu&n=5
+# https://colorbrewer2.org/#type=sequential&scheme=YlGn&n=5
+
+require 'yaml'
+require 'json'
+
+RED_SWATCH = ['#feebe2','#fbb4b9','#f768a1','#c51b8a','#7a0177']
+GRN_SWATCH = ['#ffffcc','#c2e699','#78c679','#31a354','#006837']
+
+raise "oops" if ARGV.length != 3
+
+red_ci = YAML::load(File.open(ARGV[0]))
+grn_ci = YAML::load(File.open(ARGV[1]))
+out = ARGV[2]
+
+# Needs work if lengths are smaller
+raise "oops" if red_ci['brks'].length != 6
+raise "oops" if grn_ci['brks'].length != 6
+
+ca_color = []
+
+GRN_SWATCH.each_with_index do |color,idx|
+  ca_color << [ grn_ci['brks'][idx], color ]
+end
+
+RED_SWATCH.each_with_index do |color,idx|
+  ca_color << [ red_ci['brks'][idx], color ]
+end
+
+# force midpoint to be exactly 1
+ca_color[4][0] = 1.0
+
+File.open(out,"w") do |f|
+  f.puts 'const ca_color = '+ca_color.to_json+';'
+end

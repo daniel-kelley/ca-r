@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+#
+# Covid-19 incidence by county
+#
+# Health data from
+#
+# https://data.chhs.ca.gov/dataset/california-covid-19-hospital-data-and-case-statistics
+#
+# Output in R "read table" format
+#
+
+require 'pp'
+require 'csv'
+
+idx = 1
+
+puts "        dates  I"
+prev_ri = nil
+CSV.foreach(ARGV[0]) do |row|
+  next if row[0] =~ /^County/
+  if row[0] == ARGV[1]
+    m,d,y = row[1].split('/')
+    mstr = "%02d"%m.to_i
+    dstr = "%02d"%d.to_i
+    ystr = y.to_i
+    dstr = "#{ystr}/#{mstr}/#{dstr}"
+    raise "oops" if row[2].nil?
+    ri = row[2].to_i
+    i = prev_ri.nil? ? ri : ri - prev_ri
+    prev_ri = ri
+    raise "oops #{row.inspect} #{i}" if i < 0
+    puts "#{idx} #{dstr} #{i}"
+    idx += 1
+  end
+end

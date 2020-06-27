@@ -1,0 +1,153 @@
+#!/usr/bin/env ruby
+#
+# Covid-19 incidence by county
+#
+# Health data from
+#
+# https://data.chhs.ca.gov/dataset/california-covid-19-hospital-data-and-case-statistics
+#
+# Output all counties in R "read table" format
+#
+# Note: EpiEstim.estimate_R expects I to be a daily incidence rate
+# not a cumulative instance.
+
+require 'pp'
+require 'csv'
+require 'yaml'
+
+# load region data and invert
+$region_to_county = YAML::load(File.open("data/ca-region.yml"))
+$region = {}
+$region_to_county.each do |region,county_list|
+  county_list.each { |county| $region[county]=region }
+end
+
+# write array to file
+def waf(file, ary)
+  File.open(file,"w") do |f|
+    ary.each { |line| f.puts line }
+  end
+end
+
+def convert(csv)
+  data = {}
+  CSV.foreach(csv) do |row|
+    error = 0
+    county = row[0]
+    # row r  CSV                      data
+    # 0   -  county,                  -
+    # 1   0  totalcountconfirmed,     C
+    # 2   1  totalcountdeaths,        D
+    # 3   2  newcountconfirmed,       I
+    # 4   3  newcountdeaths,          F
+    # 5   0  date                     dates
+
+    next if county =~ /^county/
+    # eventually keep unassigned for statewide calculations
+    next if county =~ /^Unassigned/
+    next if county =~ /^Out Of Country/
+
+    raise "oops #{county}" if $region[county].nil?
+
+    if data[county].nil?
+      data[county] = []
+      # Note: column names 'dates' and 'I' are dictated by estimate_R
+      # E tracks conversion errors
+      data[county] << "        dates  I C D F E"
+    end
+    # date handling
+    y,m,d = row[5].split('-')
+    mstr = "%02d"%m.to_i
+    dstr = "%02d"%d.to_i
+    ystr = y.to_i
+    dstr = "#{ystr}/#{mstr}/#{dstr}"
+    # data row indexing
+    idx = data[county].length
+    # CSV data conversion C..SI
+    r = row[1..4].map do |e|
+      if e.nil?
+        error += 1
+        0
+      else
+        v = e.to_i
+        if v < 0
+          error += 1
+          v = 0
+        end
+        v
+      end
+    end
+
+
+    a = [idx, dstr, r[2], r[0], r[1], r[3], error]
+    s = a.flatten.join(' ')
+    data[county] << s
+  end
+  # append region data
+  # append state data
+  data
+end
+
+def ggplot(cvar, col_name, geom='line', mean_col_name=nil)
+  s = "#{cvar}_g_#{col_name} <- ggplot(data=#{cvar}, aes(dates, #{col_name}))+geom_#{geom}()+"
+  if !mean_col_name.nil?
+    s << "geom_line(aes(dates,#{mean_col_name}),color=\"red\")+"
+  end
+  s << "scale_x_date(date_minor_breaks = \"1 week\")"
+end
+
+def cprocess(dir, cvar, cfile, rscript)
+  rscript << "print(\"#{cvar}\")"
+  rscript << "#{cvar} <- read.table(\"#{cfile}\",colClasses = c_col)"
+
+  if cvar == "modoc"
+    rscript << "#{cvar}_uncertain_si <- 0"
+  else
+    rscript << "#{cvar}_uncertain_si <- estimate_R(#{cvar},method = \"uncertain_si\",config = si_config)"
+  end
+
+  rscript << "write_yaml(#{cvar}_uncertain_si, \"#{dir}/#{cvar}_R.yml\")"
+  rscript << "svg('#{dir}/#{cvar}_uncertain_si.svg')"
+  rscript << "plot(#{cvar}_uncertain_si)"
+  rscript << "dev.off()"
+
+  # I
+  rscript << "#{cvar}_I_Z <- zoo(#{cvar}$I, #{cvar}$dates)"
+  rscript << "#{cvar}_I_m <- rollmean(#{cvar}_I_Z, 7,fill = list(NA, NA, NA, NULL, NA ,NA, NA))"
+  rscript << "#{cvar}$I_m = coredata(#{cvar}_I_m)"
+  rscript << ggplot(cvar, 'I','col','I_m')
+  rscript << "ggsave('#{dir}/#{cvar}_I.svg', #{cvar}_g_I)"
+
+  # C
+  rscript << ggplot(cvar, 'C')
+  rscript << "ggsave('#{dir}/#{cvar}_C.svg', #{cvar}_g_C)"
+
+  # D
+  rscript << ggplot(cvar, 'D')
+  rscript << "ggsave('#{dir}/#{cvar}_D.svg', #{cvar}_g_D)"
+
+  # E
+  rscript << ggplot(cvar, 'E', 'col')
+  rscript << "ggsave('#{dir}/#{cvar}_E.svg', #{cvar}_g_E)"
+
+  # Save updated data frame as YAML
+  rscript << "write_yaml(#{cvar}, \"#{dir}/#{cvar}_Data.yml\")"
+
+end
+
+def gen(dir,data)
+  rscript = []
+  rscript << "c_col <- c(\"integer\",\"Date\",\"integer\",\"integer\",\"integer\",\"integer\",\"integer\")"
+  data.each do |county, cdata|
+    cvar=county.gsub(' ','_').downcase
+    cfile = "#{dir}/#{cvar}.data"
+    waf(cfile, cdata)
+    cprocess(dir, cvar,cfile,rscript)
+  end
+  waf("#{dir}/process.R", rscript)
+end
+
+csv_file=ARGV[0]
+out_dir=ARGV[1]
+
+gen(out_dir,convert(csv_file))

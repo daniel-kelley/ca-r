@@ -1,0 +1,51 @@
+#!/usr/bin/env ruby
+#
+# Covid-19 class interval helper
+#
+
+require 'yaml'
+
+r_est_red = []
+r_est_grn = []
+out_dir = nil
+
+# Start with <county>_R.yml
+ARGV.each do |yfile|
+  next if yfile =~ /unassigned/
+  if out_dir.nil?
+    out_dir=File.dirname(yfile)
+  end
+  File.open(yfile) do |yf|
+    begin
+      y = YAML::load(yf)
+      if y.is_a? Hash
+        estimate_R_mean = y['R']['Mean(R)'][-1]
+        if estimate_R_mean < 1.0
+          r_est_grn << estimate_R_mean
+        else
+          r_est_red << estimate_R_mean
+        end
+      end
+    rescue
+      raise "#{yfile} #{$!}"
+    end
+  end
+end
+
+red_a = r_est_red.sort.uniq.join(',')
+grn_a = r_est_grn.sort.uniq.join(',')
+
+red_n = [red_a.length-1, 5].min
+grn_n = [grn_a.length-1, 5].min
+
+File.open("#{out_dir}/ci.R","w") do |f|
+  f.puts <<"EOF"
+library(yaml)
+library(classInt)
+ci_red <- classIntervals(c(#{red_a}),n=#{red_n}, style=\"fisher\")
+ci_grn <- classIntervals(c(#{grn_a}),n=#{grn_n}, style=\"fisher\")
+write_yaml(ci_red, "#{out_dir}/ci_red.yml")
+write_yaml(ci_grn, "#{out_dir}/ci_grn.yml")
+EOF
+
+end
