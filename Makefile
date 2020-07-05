@@ -16,6 +16,7 @@ WS_DIR ?= ws
 all: out/app_data.js out/ca_color.js
 
 out/$(CSV_FILE):
+	test -d $(dir $@) || mkdir -p $(dir $@)
 	wget -O $@ $(DATA_SRC)
 
 out/process.R: out/$(CSV_FILE) bin/ca-incidence-all

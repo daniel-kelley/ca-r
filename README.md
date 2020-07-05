@@ -1,2 +1,2 @@
 # ca-r
-California Coved-19 webapp builder
+California Covid-19 webapp builder
