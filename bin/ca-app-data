@@ -34,7 +34,6 @@ def detail(cvar, name, ad)
     <br><img src='#{cvar}_C.svg' width='50%' height='50%'/></br>
     <h3>Cumulative Deaths</h3>
     <br><img src='#{cvar}_D.svg' width='50%' height='50%'/></br>
-    <h3>Confirmed non-ICU Hospitalizations</h3>
     <h3>Conversion Errors</h3>
     <br><img src='#{cvar}_E.svg' width='50%' height='50%'/></br>
     <h3>Estimated R</h3>
