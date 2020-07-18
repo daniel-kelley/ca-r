@@ -4,23 +4,28 @@
 #  Copyright (c) 2020 by Daniel Kelley
 #
 
-RUBYLIB := $(CURDIR)/lib
-export RUBYLIB
+CASE_SRC := https://data.ca.gov/dataset/590188d5-8545-4c93-a9a0-e230f0db7290/resource/926fd08f-cc91-4828-af38-bd45de97f8c3/download/statewide_cases.csv
 
-DATA_SRC := https://data.ca.gov/dataset/590188d5-8545-4c93-a9a0-e230f0db7290/resource/926fd08f-cc91-4828-af38-bd45de97f8c3/download/statewide_cases.csv
+HOSP_SRC := https://data.ca.gov/dataset/529ac907-6ba1-4cb7-9aae-8966fc96aeef/resource/42d33765-20fd-44b8-a978-b083b7542225/download/hospitals_by_county.csv
 
-CSV_FILE := $(notdir $(DATA_SRC))
+
+CASE_CSV := $(notdir $(CASE_SRC))
+HOSP_CSV := $(notdir $(HOSP_SRC))
 
 WS_DIR ?= ws
 
 all: out/app_data.js out/ca_color.js
 
-out/$(CSV_FILE):
+out/$(CASE_CSV):
 	test -d $(dir $@) || mkdir -p $(dir $@)
-	wget -O $@ $(DATA_SRC)
+	wget -O $@ $(CASE_SRC)
 
-out/process.R: out/$(CSV_FILE) bin/ca-incidence-all
-	bin/ca-incidence-all $< $(dir $<)
+out/$(HOSP_CSV):
+	test -d $(dir $@) || mkdir -p $(dir $@)
+	wget -O $@ $(HOSP_SRC)
+
+out/process.R: out/$(CASE_CSV) out/$(HOSP_CSV) bin/ca-incidence-all
+	bin/ca-incidence-all out/$(CASE_CSV) out/$(HOSP_CSV) $(dir $<)
 
 out/san_mateo_Data.yml: src/ca-r.R out/process.R src/si-config.R
 	R -q --vanilla -f $<
