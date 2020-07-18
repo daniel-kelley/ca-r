@@ -9,27 +9,10 @@
 # Output in R "read table" format
 #
 
-require 'pp'
-require 'csv'
+require_relative "../lib/ca-r"
 
-idx = 1
-
-puts "        dates  I"
-prev_ri = nil
-CSV.foreach(ARGV[0]) do |row|
-  next if row[0] =~ /^County/
-  if row[0] == ARGV[1]
-    m,d,y = row[1].split('/')
-    mstr = "%02d"%m.to_i
-    dstr = "%02d"%d.to_i
-    ystr = y.to_i
-    dstr = "#{ystr}/#{mstr}/#{dstr}"
-    raise "oops" if row[2].nil?
-    ri = row[2].to_i
-    i = prev_ri.nil? ? ri : ri - prev_ri
-    prev_ri = ri
-    raise "oops #{row.inspect} #{i}" if i < 0
-    puts "#{idx} #{dstr} #{i}"
-    idx += 1
-  end
+if ARGV.length == 3
+  CA_R.new.gen_only(case_csv:ARGV[0], hosp_csv:ARGV[1], county:ARGV[2])
+else
+  puts "usage: #{File.basename($0)} case-csv-file  hospital-csv-file county"
 end
