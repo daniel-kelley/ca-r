@@ -20,6 +20,7 @@ class CA_R
   # Initialize this instance
   def initialize
     load_region_data
+    @as_of_date = ""
   end
 
   # load region data and invert
@@ -79,6 +80,8 @@ class CA_R
       end
       # date handling
       dstr = date_key(row[5])
+
+      @as_of_date = [dstr,@as_of_date].max
 
       # CSV data conversion
       r = row[1..4].map do |e|
@@ -323,6 +326,7 @@ class CA_R
       cprocess(out_dir, cvar,cfile,rscript)
     end
     waf("#{out_dir}/process.R", rscript)
+    waf("#{out_dir}/DATE.txt", [@as_of_date])
   end
 
   # Print R frame data for given geographic entity
