@@ -45,6 +45,7 @@ out/ca_color.js: bin/ca-color out/ci_red.yml out/ci_grn.yml
 release: out/app_data.js out/ca_color.js
 	test -d $(WS_DIR) || mkdir -p $(WS_DIR)
 	cp html/* out/* $(WS_DIR)
+	bin/change-date html/index.html out/DATE.txt $(WS_DIR)/index.html
 
 clean:
 	-rm -rf out

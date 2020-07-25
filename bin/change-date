@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+# Replace %DATE% from $1 with the formatted contents of the date file
+# $2 output to $3
+#
+
+date=`date -f $2 "+%d %B %Y"`
+sed -e "s@%DATE%@$date@" $1 > $3
