@@ -246,11 +246,7 @@ class CA_R
     rscript << "print(\"#{cvar}\")"
     rscript << "#{cvar} <- read.table(\"#{cfile}\",colClasses = c_col)"
 
-    if cvar == "modoc"
-      rscript << "#{cvar}_uncertain_si <- 0"
-    else
-      rscript << "#{cvar}_uncertain_si <- estimate_R(#{cvar},method = \"uncertain_si\",config = si_config)"
-    end
+    rscript << "#{cvar}_uncertain_si <- estimate_R(#{cvar},method = \"uncertain_si\",config = si_config)"
 
     rscript << "write_yaml(#{cvar}_uncertain_si, \"#{dir}/#{cvar}_R.yml\")"
     rscript << "svg('#{dir}/#{cvar}_uncertain_si.svg')"
