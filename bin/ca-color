@@ -8,8 +8,43 @@
 require 'yaml'
 require 'json'
 
-RED_SWATCH = ['#feebe2','#fbb4b9','#f768a1','#c51b8a','#7a0177']
-GRN_SWATCH = ['#ffffcc','#c2e699','#78c679','#31a354','#006837']
+# From color brewer
+
+RED_SWATCH_6 = ['#feebe2','#fcc5c0','#fa9fb5','#f768a1','#c51b8a','#7a0177']
+RED_SWATCH_5 = ['#feebe2','#fbb4b9','#f768a1','#c51b8a','#7a0177']
+RED_SWATCH_4 = ['#feebe2','#fbb4b9','#f768a1','#ae017e',]
+RED_SWATCH_3 = ['#fde0dd','#fa9fb5','#c51b8a']
+# Subset of RED_SWATCH_3
+RED_SWATCH_2 = ['#fde0dd','#c51b8a']
+RED_SWATCH_1 = ['#fde0dd']
+
+RED_SWATCH = {
+  RED_SWATCH_6.length => RED_SWATCH_6,
+  RED_SWATCH_5.length => RED_SWATCH_5,
+  RED_SWATCH_4.length => RED_SWATCH_4,
+  RED_SWATCH_3.length => RED_SWATCH_3,
+  RED_SWATCH_2.length => RED_SWATCH_2,
+  RED_SWATCH_1.length => RED_SWATCH_1,
+}
+
+# From color brewer
+
+GRN_SWATCH_6 = ['#ffffcc','#d9f0a3','#addd8e','#78c679','#31a354','#006837']
+GRN_SWATCH_5 = ['#ffffcc','#c2e699','#78c679','#31a354','#006837']
+GRN_SWATCH_4 = ['#ffffcc','#c2e699','#78c679','#238443',]
+GRN_SWATCH_3 = ['#f7fcb9','#addd8e','#31a354']
+# Subset of GRN_SWATCH_3
+GRN_SWATCH_2 = ['#f7fcb9','#31a354']
+GRN_SWATCH_1 = ['#f7fcb9']
+
+GRN_SWATCH = {
+  GRN_SWATCH_6.length => GRN_SWATCH_6,
+  GRN_SWATCH_5.length => GRN_SWATCH_5,
+  GRN_SWATCH_4.length => GRN_SWATCH_4,
+  GRN_SWATCH_3.length => GRN_SWATCH_3,
+  GRN_SWATCH_2.length => GRN_SWATCH_2,
+  GRN_SWATCH_1.length => GRN_SWATCH_1,
+}
 
 raise "oops" if ARGV.length != 3
 
@@ -17,22 +52,22 @@ red_ci = YAML::load(File.open(ARGV[0]))
 grn_ci = YAML::load(File.open(ARGV[1]))
 out = ARGV[2]
 
-# Needs work if lengths are smaller
-raise "oops" if red_ci['brks'].length != 6
-raise "oops" if grn_ci['brks'].length != 6
-
 ca_color = []
 
-GRN_SWATCH.each_with_index do |color,idx|
+red_ci_len = red_ci['brks'].length
+grn_ci_len = grn_ci['brks'].length
+
+GRN_SWATCH[grn_ci_len].each_with_index do |color,idx|
   ca_color << [ grn_ci['brks'][idx], color ]
 end
 
-RED_SWATCH.each_with_index do |color,idx|
+# force midpoint to be exactly 1
+ca_color[-1][0] = 1.0
+
+RED_SWATCH[red_ci_len].each_with_index do |color,idx|
   ca_color << [ red_ci['brks'][idx], color ]
 end
 
-# force midpoint to be exactly 1
-ca_color[4][0] = 1.0
 
 File.open(out,"w") do |f|
   f.puts 'const ca_color = '+ca_color.to_json+';'
