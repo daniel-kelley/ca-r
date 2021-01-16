@@ -1,0 +1,13 @@
+#!/usr/bin/env -S ruby -Ku
+#
+# CA "Blueprint For a Safer Economy" tier data from data URL
+#
+# Note ENV -S, -K above - needed for Nokogiri parsing
+
+require_relative "../lib/ca-r/ca-tier"
+
+if ARGV.length == 2
+  CA_Tier.new.scan(ARGV[0]).generate(ARGV[1])
+else
+  puts "usage: #{File.basename($0)} data-url out-yaml"
+end
