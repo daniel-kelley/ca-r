@@ -8,6 +8,7 @@ CASE_SRC := https://data.ca.gov/dataset/590188d5-8545-4c93-a9a0-e230f0db7290/res
 
 HOSP_SRC := https://data.ca.gov/dataset/529ac907-6ba1-4cb7-9aae-8966fc96aeef/resource/42d33765-20fd-44b8-a978-b083b7542225/download/hospitals_by_county.csv
 
+TIER_SRC := https://data.ca.gov/dataset/covid-19-blueprint-for-a-safer-economy-data-chart
 
 CASE_CSV := $(notdir $(CASE_SRC))
 HOSP_CSV := $(notdir $(HOSP_SRC))
@@ -30,8 +31,8 @@ out/process.R: out/$(CASE_CSV) out/$(HOSP_CSV) bin/ca-incidence-all
 out/san_mateo_Data.yml: src/ca-r.R out/process.R src/si-config.R
 	R -q --vanilla -f $<
 
-out/app_data.js: out/san_mateo_Data.yml
-	bin/ca-app-data $(dir $<)
+out/app_data.js: out/san_mateo_Data.yml out/ca_tier.yml
+	bin/ca-app-data $(dir $<) out/ca_tier.yml
 
 out/ci.R: bin/ca-ci out/san_mateo_R.yml
 	bin/ca-ci out/*_R.yml
@@ -41,6 +42,9 @@ out/ci_red.yml: out/ci.R
 
 out/ca_color.js: bin/ca-color out/ci_red.yml out/ci_grn.yml
 	$+ $@
+
+out/ca_tier.yml: bin/ca-tier
+	$< $(TIER_SRC) $@
 
 release: out/app_data.js out/ca_color.js
 	test -d $(WS_DIR) || mkdir -p $(WS_DIR)

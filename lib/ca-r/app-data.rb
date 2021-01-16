@@ -10,10 +10,58 @@ require 'fileutils'
 
 class APP_DATA
 
-  def initialize
+  # Description/color from
+  #   https://covid19.ca.gov/safer-economy/#county-status
+  TIER_DESC = {
+    1 => 'Widespread',
+    2 => 'Substantial',
+    3 => 'Moderate',
+    4 => 'Minimal'
+  }
+
+  TIER_COLOR = {
+    1 => 'purple',
+    2 => 'red',
+    3 => 'orange',
+    4 => 'yellow'
+  }
+
+  def initialize(tier_data)
+    @tier_data = yaml_load(tier_data)
+  end
+
+  def yaml_load(file)
+    File.open(file) { |yf| YAML::load(yf) }
+  end
+
+  def get_tier(county)
+    data = @tier_data[county]
+    raise "oops: missing tier data for #{county}" if data.nil?
+    data
+  end
+
+  def get_tier_quick(county)
+    tier = get_tier(county)
+    final = TIER_DESC[tier['final_tier']]
+    prev = TIER_DESC[tier['previous_tier']]
+    return (final == prev) ? "#{final}" : "#{prev}->#{final}"
   end
 
   def detail(cvar, name, ad)
+    tier = get_tier(name)
+    final_tier = TIER_DESC[tier['final_tier']]
+    previous_tier = TIER_DESC[tier['previous_tier']]
+    current_tier = TIER_DESC[tier['current_tier']]
+    final_color = TIER_COLOR[tier['final_tier']]
+    previous_color = TIER_COLOR[tier['previous_tier']]
+    current_color = TIER_COLOR[tier['current_tier']]
+    final_style = "background-color: #{final_color}"
+    previous_style = "background-color: #{previous_color}"
+    current_style = "background-color: #{current_color}"
+    test_positivity = tier['test_positivity']
+    tests_per_100k = tier['tests_per_100k']
+    population = tier['population']
+
     em = ad['estimate_R_mean']
     es = ad['estimate_R_std']
     aI = ad['I']
@@ -26,10 +74,16 @@ class APP_DATA
       <table>
       <tr><td>County</td><td>#{name}</td></tr>
       <tr><td>Estimated R</td><td>#{em}(#{es})</td></tr>
-    <tr><td>Daily Incidence</td><td>#{aI}</td></tr>
+      <tr><td>Daily Incidence</td><td>#{aI}</td></tr>
       <tr><td>Cumulative Incidence</td><td>#{aC}</td></tr>
       <tr><td>Cumulative Deaths</td><td>#{aD}</td></tr>
       <tr><td>Conversion Errors</td><td>#{aE}</td></tr>
+      <tr><td>Final Tier</td><td style='#{final_style}'>#{final_tier}</td></tr>
+      <tr><td>Previous Tier</td><td style='#{previous_style}'>#{previous_tier}</td></tr>
+      <tr><td>Current Tier</td><td style='#{current_style}'>#{current_tier}</td></tr>
+      <tr><td>Test Positivity</td><td>#{test_positivity}</td></tr>
+      <tr><td>Tests/100k</td><td>#{tests_per_100k}</td></tr>
+      <tr><td>Population</td><td>#{population}</td></tr>
       </table>
     <h3>Daily Incidence</h3>
       <br><img src='#{cvar}_I.svg' width='50%' height='50%'/></br>
@@ -93,7 +147,7 @@ EOF
             estimate_R_mean = y['R']['Mean(R)'][-1]
             estimate_R_std = y['R']['Std(R)'][-1]
           else
-            # What's up with Modoc County?
+            # Modoc County didn't have any reports early on
             estimate_R_mean = 0
             estimate_R_std = 0
             problem = 1
@@ -102,6 +156,7 @@ EOF
           app_data[s]['estimate_R_mean'] = estimate_R_mean
           app_data[s]['estimate_R_std'] = estimate_R_std
           app_data[s]['problem'] = problem
+          app_data[s]['tier'] = get_tier_quick(s)
           app_data[s]['detail'] = detail_file
         rescue
           raise "#{yfile} #{$!}"

@@ -92,12 +92,13 @@
 
     function feature_info(feature) {
         name = feature.properties.NAME;
-        s = '<br>County: '+name+'</br>';
+        s = 'County: '+name;
         s += '<br>estimated_R: '
         s += app_data[name]['estimate_R_mean']
-        s += '(' +  app_data[name]['estimate_R_std'] + ')'  +'</br>';
-        s += '<br>Cumulative cases:'+app_data[name]['C']+'</br>';
-        s += '<a href="'+app_data[name]['detail']+'">Details</a>';
+        s += '(' +  app_data[name]['estimate_R_std'] + ')';
+        s += '<br>Cumulative cases:'+app_data[name]['C'];
+        s += '<br>Tier:'+app_data[name]['tier'];
+        s += '<br><a href="'+app_data[name]['detail']+'">Details</a>';
 
         return s;
     }
