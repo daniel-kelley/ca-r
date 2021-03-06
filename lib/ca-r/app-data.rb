@@ -40,27 +40,33 @@ class APP_DATA
     data
   end
 
+  def get_tier_value(tier, key)
+    value = tier[key]
+    raise "missing #{key}" if value.nil?
+    value
+  end
+
   def get_tier_quick(county)
     tier = get_tier(county)
-    final = TIER_DESC[tier['final_tier']]
-    prev = TIER_DESC[tier['previous_tier']]
+    final = TIER_DESC[get_tier_value(tier, 'final_tier')]
+    prev = TIER_DESC[get_tier_value(tier, 'previous_tier')]
     return (final == prev) ? "#{final}" : "#{prev}->#{final}"
   end
 
   def detail(cvar, name, ad)
     tier = get_tier(name)
-    final_tier = TIER_DESC[tier['final_tier']]
-    previous_tier = TIER_DESC[tier['previous_tier']]
-    current_tier = TIER_DESC[tier['current_tier']]
-    final_color = TIER_COLOR[tier['final_tier']]
-    previous_color = TIER_COLOR[tier['previous_tier']]
-    current_color = TIER_COLOR[tier['current_tier']]
+    final_tier = TIER_DESC[get_tier_value(tier, 'final_tier')]
+    previous_tier = TIER_DESC[get_tier_value(tier, 'previous_tier')]
+    current_tier = TIER_DESC[get_tier_value(tier, 'current_tier')]
+    final_color = TIER_COLOR[get_tier_value(tier, 'final_tier')]
+    previous_color = TIER_COLOR[get_tier_value(tier, 'previous_tier')]
+    current_color = TIER_COLOR[get_tier_value(tier, 'current_tier')]
     final_style = "background-color: #{final_color}"
     previous_style = "background-color: #{previous_color}"
     current_style = "background-color: #{current_color}"
-    test_positivity = tier['test_positivity']
-    tests_per_100k = tier['tests_per_100k']
-    population = tier['population']
+    test_positivity = get_tier_value(tier, 'test_positivity')
+    tests_per_100k = get_tier_value(tier, 'tests_per_100k')
+    population = get_tier_value(tier, 'population')
 
     em = ad['estimate_R_mean']
     es = ad['estimate_R_std']
