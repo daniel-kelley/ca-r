@@ -2,10 +2,6 @@
 #
 # Covid-19 incidence by county
 #
-# Health data from
-#
-# https://data.chhs.ca.gov/dataset/california-covid-19-hospital-data-and-case-statistics
-#
 # Output all counties in R "read table" format
 #
 # Note: EpiEstim.estimate_R expects I to be a daily incidence rate
@@ -13,8 +9,8 @@
 
 require_relative "../lib/ca-r"
 
-if ARGV.length == 3
-  CA_R.new.gen_all(case_csv:ARGV[0], hosp_csv:ARGV[1], dir:ARGV[2])
+if ARGV.length == 2
+  CA_R.new.gen_all(case_csv:ARGV[0], dir:ARGV[1])
 else
-  puts "usage: #{File.basename($0)} case-csv-file hospital-csv-file out-dir"
+  puts "usage: #{File.basename($0)} case-csv-file out-dir"
 end

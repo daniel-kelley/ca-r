@@ -97,22 +97,6 @@ class APP_DATA
       <br><img src='#{cvar}_C.svg' width='50%' height='50%'/></br>
     <h3>Cumulative Deaths</h3>
       <br><img src='#{cvar}_D.svg' width='50%' height='50%'/></br>
-
-    <h3>Hospitalized Confirmed COVID-19 Patients</h3>
-      <br><img src='#{cvar}_HC.svg' width='50%' height='50%'/></br>
-    <h3>Hospitalized Suspected COVID-19  Patients</h3>
-      <br><img src='#{cvar}_HS.svg' width='50%' height='50%'/></br>
-    <h3>Hospitalized Covid-19 Patients</h3>
-      <br><img src='#{cvar}_HP.svg' width='50%' height='50%'/></br>
-    <h3>All Hospital Beds</h3>
-      <br><img src='#{cvar}_HB.svg' width='50%' height='50%'/></br>
-    <h3>ICU Confirmed COVID-19 Patients</h3>
-      <br><img src='#{cvar}_IC.svg' width='50%' height='50%'/></br>
-    <h3>ICU Suspected COVID-19  Patients</h3>
-      <br><img src='#{cvar}_IS.svg' width='50%' height='50%'/></br>
-    <h3>ICU Hospital Beds</h3>
-      <br><img src='#{cvar}_IB.svg' width='50%' height='50%'/></br>
-
     <h3>Conversion Errors</h3>
       <br><img src='#{cvar}_E.svg' width='50%' height='50%'/></br>
     <h3>Estimated R</h3>

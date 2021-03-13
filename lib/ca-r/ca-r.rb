@@ -9,6 +9,7 @@ require 'csv'
 require 'yaml'
 require 'pathname'
 require 'fileutils'
+require 'date'
 require_relative 'rframe'
 
 class CA_R
@@ -16,6 +17,12 @@ class CA_R
   LIBDIR = File::dirname __FILE__
   DATA = "#{LIBDIR}/../../data/"
   REGION_TO_COUNTY = YAML::load(File.open("#{DATA}/ca-region.yml"))
+  # Match start date to previous statewide_cases data file. Backfilled
+  # case data in covid19cases_test causes crazy R0 values and throws
+  # off the verical scale, making comparisons of the old and new data
+  # sets difficult. Making the start dates match gets rid of most of
+  # the crazyness.
+  START_DATE = Date.parse("2020/03/18")
 
   # Initialize this instance
   def initialize
@@ -52,12 +59,19 @@ class CA_R
     # may eventually keep unassigned for statewide calculations
     return true if county =~ /^Unassigned/
     return true if county =~ /^Out Of Country/
+    return true if county =~ /^Out of state/
+    return true if county =~ /^Unknown/
     return true if !only.nil? && county != only
     return false
   end
 
-  # Convert case data
-  def convert_case(data, case_csv, frame_format, only)
+  def skip_date(datestr)
+    date = Date.parse(datestr)
+    date < START_DATE
+  end
+
+  # Convert case data (deprecated - old statewide_cases.csv)
+  def convert_statewide_cases(data, case_csv, frame_format, only)
     CSV.foreach(case_csv) do |row|
       error = 0
       county = row[0]
@@ -106,7 +120,103 @@ class CA_R
     end
   end
 
+  # Convert case data (new covid19cases_test.csv)
+  def convert_covid19cases_test(data, case_csv, frame_format, only)
+    CSV.foreach(case_csv) do |row|
+      # r row CSV                      data
+      # - 0   date
+      # - 1   area                     <data key> if area_type == County
+      # - 2   area_type
+      # 0 3   population
+      # 1 4   cases                    C
+      # 2 5   deaths                   D
+      # 3 6   total_tests
+      # 4 7   positive_tests
+      # 5 8   reported_cases
+      # 6 9   reported_deaths
+      # 7 10  reported_tests
+
+      error = 0
+      county = row[1]
+
+      next if row[0].nil? # skip empty dates
+      next if row[2] != "County" # only look at area type County
+      next if skip_row(county,only)
+
+      raise "oops #{county}" if @region[county].nil?
+
+      if data[county].nil?
+        # Note: column names 'dates' and 'I' are dictated by estimate_R
+        # E tracks conversion errors
+        data[county] = RFrame.new(*frame_format)
+      end
+      # date handling
+      dstr = date_key(row[0])
+      next if skip_date(dstr)
+
+      @as_of_date = [dstr,@as_of_date].max
+
+      # CSV data conversion
+      r = row[3..-1].map do |e|
+        if e.nil?
+          error += 1
+          0
+        else
+          begin
+            v = Float(e)
+          rescue
+            v = 0.0
+            error += 1
+          end
+          if v < 0.0
+            error += 1
+            v = 0
+          end
+          v
+        end
+      end
+
+      # C,D need to be derived
+      data[county].set_value(dstr, "I", r[1].to_i)
+      data[county].set_value(dstr, "F", r[2].to_i)
+      data[county].set_value(dstr, "E", error)
+    end
+  end
+
+  # Derive cumulative case C and death D data from daily I and F data.
+  def derive_C_D(data, only)
+    cur_C = 0
+    cur_D = 0
+    data.each do |county,frame|
+      next if skip_row(county,only)
+      frame.data.keys.sort.each do |date|
+        raise "oops" if skip_date(date) # already handled
+        row = frame.data[date]
+        raise 'oops' if row.nil?
+        begin
+          cur_I = frame.get_value(date, 'I')
+          cur_F = frame.get_value(date, 'F')
+        rescue
+          puts row.inspect
+          raise $!
+        end
+        cur_C += cur_I
+        cur_D += cur_F
+        frame.set_value(date, 'C', cur_C)
+        frame.set_value(date, 'D', cur_D)
+      end
+    end
+  end
+
+
+  def convert_case(data, case_csv, frame_format, only)
+    convert_covid19cases_test(data, case_csv, frame_format, only)
+    derive_C_D(data, only)
+  end
+
   # Convert hospital data
+  #
+  # Deprecated, as hospital data is no longer available as of 13 March 2021
   def convert_hosp(data, hosp_csv, only)
     CSV.foreach(hosp_csv) do |row|
       error = 0
@@ -171,6 +281,8 @@ class CA_R
   # Groom hospital data
   #   Not every incidence date has corresponding hospital data
   #   Set any missing hospital data to zero
+  #
+  # Deprecated, as hospital data is no longer available as of 13 March 2021
   def groom_hosp(data, only)
     data.each do |county, frame|
       next if !only.nil? && county != only
@@ -204,7 +316,7 @@ class CA_R
 
   # Convert csv file to hash of R Frames indexed by geographic
   # entity. If 'only' is not nil, only do conversion for given entity.
-  def convert(case_csv, hosp_csv, only=nil)
+  def convert(case_csv, only=nil)
     data = {}
     frame_format = [
       {"dates"=>"Date"},
@@ -213,22 +325,10 @@ class CA_R
       {"D"=>"integer"},
       {"F"=>"integer"},
       {"E"=>"integer"},
-      {"HC"=>"integer"},
-      {"HS"=>"integer"},
-      {"HP"=>"integer"},
-      {"HB"=>"integer"},
-      {"IC"=>"integer"},
-      {"IS"=>"integer"},
-      {"IB"=>"integer"},
     ]
 
     convert_case(data, case_csv, frame_format, only)
-    convert_hosp(data, hosp_csv, only)
-    groom_hosp(data, only)
     groom_case(data, only)
-
-    # append region data
-    # append state data
     data
   end
 
@@ -241,8 +341,8 @@ class CA_R
     s << "scale_x_date(date_minor_breaks = \"1 week\")"
   end
 
-  # Construct R commands to process geographic entity data
-  def cprocess(dir, cvar, cfile, rscript)
+  # Construct R commands to process geographic entity data (with hosp)
+  def cprocess_old(dir, cvar, cfile, rscript)
     rscript << "print(\"#{cvar}\")"
     rscript << "#{cvar} <- read.table(\"#{cfile}\",colClasses = c_col)"
 
@@ -305,12 +405,48 @@ class CA_R
 
   end
 
+  # Construct R commands to process geographic entity data
+  def cprocess(dir, cvar, cfile, rscript)
+    rscript << "print(\"#{cvar}\")"
+    rscript << "#{cvar} <- read.table(\"#{cfile}\",colClasses = c_col)"
+
+    rscript << "#{cvar}_uncertain_si <- estimate_R(#{cvar},method = \"uncertain_si\",config = si_config)"
+
+    rscript << "write_yaml(#{cvar}_uncertain_si, \"#{dir}/#{cvar}_R.yml\")"
+    rscript << "svg('#{dir}/#{cvar}_uncertain_si.svg')"
+    rscript << "plot(#{cvar}_uncertain_si)"
+    rscript << "dev.off()"
+
+    # I
+    rscript << "#{cvar}_I_Z <- zoo(#{cvar}$I, #{cvar}$dates)"
+    rscript << "#{cvar}_I_m <- rollmean(#{cvar}_I_Z, 7,fill = list(NA, NA, NA, NULL, NA ,NA, NA))"
+    rscript << "#{cvar}$I_m = coredata(#{cvar}_I_m)"
+    rscript << ggplot(cvar, 'I','col','I_m')
+    rscript << "ggsave('#{dir}/#{cvar}_I.svg', #{cvar}_g_I)"
+
+    # C
+    rscript << ggplot(cvar, 'C')
+    rscript << "ggsave('#{dir}/#{cvar}_C.svg', #{cvar}_g_C)"
+
+    # D
+    rscript << ggplot(cvar, 'D')
+    rscript << "ggsave('#{dir}/#{cvar}_D.svg', #{cvar}_g_D)"
+
+    # E
+    rscript << ggplot(cvar, 'E', 'col')
+    rscript << "ggsave('#{dir}/#{cvar}_E.svg', #{cvar}_g_E)"
+
+    # Save updated data frame as YAML
+    rscript << "write_yaml(#{cvar}, \"#{dir}/#{cvar}_Data.yml\")"
+
+  end
+
   # Generate R commands and data for all geographic entities
-  def gen_all(case_csv:, hosp_csv:, dir:)
+  def gen_all(case_csv:, dir:)
     pn = Pathname.new(dir)
     out_dir = pn.cleanpath
     FileUtils.mkdir_p(out_dir)
-    data = convert(case_csv, hosp_csv)
+    data = convert(case_csv)
     rscript = []
     data.each do |county, cdata|
       if rscript.length == 0
@@ -326,8 +462,8 @@ class CA_R
   end
 
   # Print R frame data for given geographic entity
-  def gen_only(case_csv:, hosp_csv:, county:)
-    data = convert(case_csv, hosp_csv, county)
+  def gen_only(case_csv:, county:)
+    data = convert(case_csv, county)
     waf("/proc/self/fd/1", data[county].get_a)
   end
 

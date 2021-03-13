@@ -2,17 +2,13 @@
 #
 # Covid-19 incidence by county
 #
-# Health data from
-#
-# https://data.chhs.ca.gov/dataset/california-covid-19-hospital-data-and-case-statistics
-#
 # Output in R "read table" format
 #
 
 require_relative "../lib/ca-r"
 
-if ARGV.length == 3
-  CA_R.new.gen_only(case_csv:ARGV[0], hosp_csv:ARGV[1], county:ARGV[2])
+if ARGV.length == 2
+  CA_R.new.gen_only(case_csv:ARGV[0], county:ARGV[1])
 else
-  puts "usage: #{File.basename($0)} case-csv-file  hospital-csv-file county"
+  puts "usage: #{File.basename($0)} case-csv-file county"
 end

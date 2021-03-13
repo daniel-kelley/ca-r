@@ -41,6 +41,16 @@ class RFrame
     @data[key][name] = value
   end
 
+  # Get value of data item 'name' (from desc)  at 'key'
+  def get_value(key, name)
+    if @data[key].nil?
+      raise "key #{key} row missing"
+    end
+    value = @data[key][name]
+    raise "key #{key} value missing" if value.nil?
+    value
+  end
+
   # Increment data item 'name' (from desc) to 'value' at 'key'
   # key and name must already exist
   def incr_value(key, name, value)

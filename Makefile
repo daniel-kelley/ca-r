@@ -4,14 +4,11 @@
 #  Copyright (c) 2020 by Daniel Kelley
 #
 
-CASE_SRC := https://data.ca.gov/dataset/590188d5-8545-4c93-a9a0-e230f0db7290/resource/926fd08f-cc91-4828-af38-bd45de97f8c3/download/statewide_cases.csv
-
-HOSP_SRC := https://data.ca.gov/dataset/529ac907-6ba1-4cb7-9aae-8966fc96aeef/resource/42d33765-20fd-44b8-a978-b083b7542225/download/hospitals_by_county.csv
+CASE_SRC := https://data.chhs.ca.gov/dataset/f333528b-4d38-4814-bebb-12db1f10f535/resource/046cdd2b-31e5-4d34-9ed3-b48cdbc4be7a/download/covid19cases_test.csv
 
 TIER_SRC := https://data.ca.gov/dataset/covid-19-blueprint-for-a-safer-economy-data-chart
 
 CASE_CSV := $(notdir $(CASE_SRC))
-HOSP_CSV := $(notdir $(HOSP_SRC))
 
 WS_DIR ?= ws
 
@@ -21,12 +18,8 @@ out/$(CASE_CSV):
 	test -d $(dir $@) || mkdir -p $(dir $@)
 	wget -O $@ $(CASE_SRC)
 
-out/$(HOSP_CSV):
-	test -d $(dir $@) || mkdir -p $(dir $@)
-	wget -O $@ $(HOSP_SRC)
-
-out/process.R: out/$(CASE_CSV) out/$(HOSP_CSV) bin/ca-incidence-all
-	bin/ca-incidence-all out/$(CASE_CSV) out/$(HOSP_CSV) $(dir $<)
+out/process.R: out/$(CASE_CSV) bin/ca-incidence-all
+	bin/ca-incidence-all out/$(CASE_CSV) $(dir $<)
 
 out/san_mateo_Data.yml: src/ca-r.R out/process.R src/si-config.R
 	R -q --vanilla -f $<
