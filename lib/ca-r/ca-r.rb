@@ -185,9 +185,9 @@ class CA_R
 
   # Derive cumulative case C and death D data from daily I and F data.
   def derive_C_D(data, only)
-    cur_C = 0
-    cur_D = 0
     data.each do |county,frame|
+      cur_C = 0
+      cur_D = 0
       next if skip_row(county,only)
       frame.data.keys.sort.each do |date|
         raise "oops" if skip_date(date) # already handled
@@ -207,7 +207,6 @@ class CA_R
       end
     end
   end
-
 
   def convert_case(data, case_csv, frame_format, only)
     convert_covid19cases_test(data, case_csv, frame_format, only)
