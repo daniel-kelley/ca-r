@@ -59,13 +59,16 @@ class CA_Tier
     @hdr=r[0]
   end
 
-  def lookup(key, row)
+  def lookup(key, row, relaxed=false)
     @hdr.each_with_index do |h,i|
       if h =~ key
         return row[i]
       end
     end
-    raise "Cannot find header key #{s}"
+    if !relaxed
+      raise "Cannot find header key #{key}"
+    end
+    nil
   end
 
   #
@@ -83,7 +86,7 @@ class CA_Tier
       'final_tier' => groom_integer(lookup(/Final Tier/,row)),
       'previous_tier' => groom_integer(lookup(/Previous Tier/,row)),
       #'starting_date' => lookup(//,row),
-      'current_tier' => groom_integer(lookup(/Tier for Week/,row)),
+      'current_tier' => groom_integer(lookup(/Tier for Week/,row,true)||lookup(/Final Tier/,row)),
       'test_positivity' => groom_float(lookup(/Test Positivity/,row)),
       #'adjusted_case_rate' => groom_float(lookup(//,row)),
       #'unadjusted_case_rate' => groom_float(lookup(//,row)),
