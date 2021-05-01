@@ -55,7 +55,7 @@ class CA_Tier
     CSV.new(@hdr_str).each do |row|
       r << row
     end
-    raise 'oops' if r.length != 1
+    raise "oops: #{r.inspect}" if r.length < 1
     @hdr=r[0]
   end
 
