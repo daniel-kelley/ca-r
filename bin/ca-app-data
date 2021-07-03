@@ -5,9 +5,9 @@
 
 require_relative "../lib/ca-r"
 
-if ARGV.length == 2
-  APP_DATA.new(ARGV[1]).gen(dir:ARGV[0])
+if ARGV.length == 1
+  APP_DATA.new.gen(dir:ARGV[0])
 else
-  puts "usage: #{File.basename($0)} out-dir tier-data"
+  puts "usage: #{File.basename($0)} out-dir"
 end
 
