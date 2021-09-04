@@ -32,8 +32,18 @@ ARGV.each do |yfile|
   end
 end
 
-red_a = r_est_red.sort.uniq.join(',')
-grn_a = r_est_grn.sort.uniq.join(',')
+def ci_color_a(a)
+  col_a = a.sort.uniq
+  if col_a.length == 1
+    # if the length is one, create a minimal color interval range
+    col_a << col_a[0] * 1.001
+    col_a << col_a[1] * 1.001
+  end
+  col_a
+end
+
+red_a = ci_color_a(r_est_red)
+grn_a = ci_color_a(r_est_grn)
 
 red_n = [red_a.length-1, 5].min
 grn_n = [grn_a.length-1, 5].min
@@ -42,8 +52,8 @@ File.open("#{out_dir}/ci.R","w") do |f|
   f.puts <<"EOF"
 library(yaml)
 library(classInt)
-ci_red <- classIntervals(c(#{red_a}),n=#{red_n}, style=\"fisher\")
-ci_grn <- classIntervals(c(#{grn_a}),n=#{grn_n}, style=\"fisher\")
+ci_red <- classIntervals(c(#{red_a.join(',')}),n=#{red_n}, style=\"fisher\")
+ci_grn <- classIntervals(c(#{grn_a.join(',')}),n=#{grn_n}, style=\"fisher\")
 write_yaml(ci_red, "#{out_dir}/ci_red.yml")
 write_yaml(ci_grn, "#{out_dir}/ci_grn.yml")
 EOF
