@@ -7,6 +7,10 @@ require 'yaml'
 
 r_est_red = []
 r_est_grn = []
+
+r_est_red_none = [1.0,1.5,2.0]
+r_est_grn_none = [0.0,0.5,0.9]
+
 out_dir = nil
 
 # Start with <county>_R.yml
@@ -32,9 +36,12 @@ ARGV.each do |yfile|
   end
 end
 
-def ci_color_a(a)
+def ci_color_a(a,a_none)
   col_a = a.sort.uniq
-  if col_a.length == 1
+  if col_a.length == 0
+    # if the length is zero, use a dummy range
+    col_a = a_none
+  elsif col_a.length == 1
     # if the length is one, create a minimal color interval range
     col_a << col_a[0] * 1.001
     col_a << col_a[1] * 1.001
@@ -42,8 +49,8 @@ def ci_color_a(a)
   col_a
 end
 
-red_a = ci_color_a(r_est_red)
-grn_a = ci_color_a(r_est_grn)
+red_a = ci_color_a(r_est_red,r_est_red_none)
+grn_a = ci_color_a(r_est_grn,r_est_grn_none)
 
 red_n = [red_a.length-1, 5].min
 grn_n = [grn_a.length-1, 5].min
