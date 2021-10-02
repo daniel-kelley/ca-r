@@ -45,6 +45,9 @@ def ci_color_a(a,a_none)
     # if the length is one, create a minimal color interval range
     col_a << col_a[0] * 1.001
     col_a << col_a[1] * 1.001
+  elsif col_a.length == 2
+    # if the length is two, add one more interval to keep R happy
+    col_a << col_a[1] * 1.001
   end
   col_a
 end
