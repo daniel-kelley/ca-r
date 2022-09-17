@@ -45,9 +45,25 @@ class CA_R
     end
   end
 
+  # Parse date with "American" mon/day/year format
+  def parse_date(datestr)
+    if datestr =~ %r{(\d\d)/(\d\d)/(\d\d\d\d)}
+      # mon/day/year
+      datestr = "#{$3}-#{$1}-#{$2}"
+    end
+    begin
+      return Date.parse(datestr)
+    rescue
+      return START_DATE - 1
+    end
+  end
+
   # Return a date string as a canonical R format date string key
-  def date_key(date_str)
-    y,m,d = date_str.split('-')
+  def date_key(datestr)
+    date = parse_date(datestr)
+    y = date.year
+    m = date.mon
+    d = date.day
     mstr = "%02d"%m.to_i
     dstr = "%02d"%d.to_i
     ystr = y.to_i
@@ -66,7 +82,7 @@ class CA_R
   end
 
   def skip_date(datestr)
-    date = Date.parse(datestr)
+    date = parse_date(datestr)
     date < START_DATE
   end
 
@@ -182,6 +198,7 @@ class CA_R
       end
       # date handling
       dstr = date_key(row[0])
+      next if dstr =~ /^$/
       next if skip_date(dstr)
 
       @as_of_date = [dstr,@as_of_date].max
