@@ -86,78 +86,21 @@ class CA_R
     date < START_DATE
   end
 
-  # Convert case data (deprecated - old statewide_cases.csv)
-  def convert_statewide_cases(data, case_csv, frame_format, only)
-    CSV.foreach(case_csv) do |row|
-      error = 0
-      county = row[0]
-      # r row CSV                      data
-      # - 0   county,                  <data key>
-      # 0 1   totalcountconfirmed,     C
-      # 1 2   totalcountdeaths,        D
-      # 2 3   newcountconfirmed,       I
-      # 3 4   newcountdeaths,          F
-      # - 5   date                     dates
-
-      next if skip_row(county,only)
-
-      raise "oops #{county}" if @region[county].nil?
-
-      if data[county].nil?
-        # Note: column names 'dates' and 'I' are dictated by estimate_R
-        # E tracks conversion errors
-        data[county] = RFrame.new(*frame_format)
-      end
-      # date handling
-      dstr = date_key(row[5])
-
-      @as_of_date = [dstr,@as_of_date].max
-
-      # CSV data conversion
-      r = row[1..4].map do |e|
-        if e.nil?
-          error += 1
-          0
-        else
-          v = e.to_i
-          if v < 0
-            error += 1
-            v = 0
-          end
-          v
-        end
-      end
-
-      data[county].set_value(dstr, "I", r[2])
-      data[county].set_value(dstr, "C", r[0])
-      data[county].set_value(dstr, "D", r[1])
-      data[county].set_value(dstr, "F", r[3])
-      data[county].set_value(dstr, "E", error)
-    end
-  end
-
   # Convert case data (new covid19cases_test.csv)
   def convert_covid19cases_test(data, case_csv, frame_format, only)
     idx = 0
     CSV.foreach(case_csv) do |row|
-      #  r row CSV                      data
+      #  r row CSV                          data
       #  - 0   date
-      #  - 1   area                     <data key> if area_type == County
+      #  - 1   area                         <data key> if area_type == County
       #  - 2   area_type
       #  0 3   population
-      #  1 4   cases                    I
-      #  2 5   cumulative_cases         C
-      #  3 6   deaths                   F
-      #  4 7   cumulative_deaths        D
-      #  5 8   total_tests
-      #  6 9   cumulative_total_tests
-      #  7 10  positive_tests
-      #  8 11  cumulative_positive_tests
-      #  9 12  reported_cases
-      # 10 13  cumulative_reported_cases
-      # 11 14  reported_deaths
-      # 12 15  cumulative_reported_deaths
-      # 13 16  reported_tests
+      #  1 4   deaths                       F
+      #  2 5   cumulative_deaths            D
+      #  3 6   total_tests
+      #  4 7   cumulative_total_tests
+      #  5 8   positive_tests               I
+      #  6 9   cumulative_positive_tests    C
 
       error = 0
       county = row[1]
@@ -170,19 +113,12 @@ class CA_R
         raise 'oops' if row[1] != 'area'
         raise 'oops' if row[2] != 'area_type'
         raise 'oops' if row[3] != 'population'
-        raise 'oops' if row[4] != 'cases'
-        raise 'oops' if row[5] != 'cumulative_cases'
-        raise 'oops' if row[6] != 'deaths'
-        raise 'oops' if row[7] != 'cumulative_deaths'
-        raise 'oops' if row[8] != 'total_tests'
-        raise 'oops' if row[9] != 'cumulative_total_tests'
-        raise 'oops' if row[10] != 'positive_tests'
-        raise 'oops' if row[11] != 'cumulative_positive_tests'
-        raise 'oops' if row[12] != 'reported_cases'
-        raise 'oops' if row[13] != 'cumulative_reported_cases'
-        raise 'oops' if row[14] != 'reported_deaths'
-        raise 'oops' if row[15] != 'cumulative_reported_deaths'
-        raise 'oops' if row[16] != 'reported_tests'
+        raise 'oops' if row[4] != 'deaths'
+        raise 'oops' if row[5] != 'cumulative_deaths'
+        raise 'oops' if row[6] != 'total_tests'
+        raise 'oops' if row[7] != 'cumulative_total_tests'
+        raise 'oops' if row[8] != 'positive_tests'
+        raise 'oops' if row[9] != 'cumulative_positive_tests'
       end
 
       next if row[0].nil? # skip empty dates
@@ -223,127 +159,17 @@ class CA_R
         end
       end
 
-      data[county].set_value(dstr, "I", r[1].to_i)
-      data[county].set_value(dstr, "C", r[2].to_i)
-      data[county].set_value(dstr, "F", r[3].to_i)
-      data[county].set_value(dstr, "D", r[4].to_i)
+      data[county].set_value(dstr, "I", r[5].to_i)
+      data[county].set_value(dstr, "C", r[6].to_i)
+      data[county].set_value(dstr, "F", r[1].to_i)
+      data[county].set_value(dstr, "D", r[2].to_i)
       data[county].set_value(dstr, "E", error)
 
     end
   end
 
-  # Derive cumulative case C and death D data from daily I and F data.
-  # Deprecated
-  def derive_C_D(data, only)
-    data.each do |county,frame|
-      cur_C = 0
-      cur_D = 0
-      next if skip_row(county,only)
-      frame.data.keys.sort.each do |date|
-        raise "oops" if skip_date(date) # already handled
-        row = frame.data[date]
-        raise 'oops' if row.nil?
-        begin
-          cur_I = frame.get_value(date, 'I')
-          cur_F = frame.get_value(date, 'F')
-        rescue
-          puts row.inspect
-          raise $!
-        end
-        cur_C += cur_I
-        cur_D += cur_F
-        frame.set_value(date, 'C', cur_C)
-        frame.set_value(date, 'D', cur_D)
-      end
-    end
-  end
-
   def convert_case(data, case_csv, frame_format, only)
     convert_covid19cases_test(data, case_csv, frame_format, only)
-  end
-
-  # Convert hospital data
-  #
-  # Deprecated, as hospital data is no longer available as of 13 March 2021
-  def convert_hosp(data, hosp_csv, only)
-    CSV.foreach(hosp_csv) do |row|
-      error = 0
-      county = row[0]
-
-      # r row CSV                                         data
-      # - 0   county,                                     <data key>
-      # - 1   todays_date,                                dates
-      # 0 2   hospitalized_covid_confirmed_patients,      HC
-      # 1 3   hospitalized_suspected_covid_patients,      HS
-      # 2 4   hospitalized_covid_patients,                HP
-      # 3 5   all_hospital_beds,                          HB
-      # 4 6   icu_covid_confirmed_patients,               IC
-      # 5 7   icu_suspected_covid_patients,               IS
-      # 6 8   icu_available_beds                          IB
-
-      next if skip_row(county,only)
-
-      raise "oops #{county}" if data[county].nil?
-
-      # date handling
-      dstr = date_key(row[1])
-
-      # CSV data conversion
-      r = row[2..8].map do |e|
-        if e.nil?
-          # A lot of empty data so don't treat as an error
-          0
-        else
-          v = e.to_i
-          if v < 0
-            # Not expecting negative
-            error += 1
-            v = 0
-          end
-          # CSV format is floating point but these are expected to be counts
-          #
-          vf = e.to_f
-          vi = vf.to_i
-          if (vf - vi > 0.0001)
-            raise "unexpected #{e}"
-          end
-          v
-        end
-      end
-
-      data[county].set_value(dstr, "HC", r[0])
-      data[county].set_value(dstr, "HS", r[1])
-      data[county].set_value(dstr, "HP", r[2])
-      data[county].set_value(dstr, "HB", r[3])
-      data[county].set_value(dstr, "IC", r[4])
-      data[county].set_value(dstr, "IS", r[5])
-      data[county].set_value(dstr, "IB", r[6])
-
-      if error != 0
-        data[county].incr_value(dstr, "E", error)
-      end
-
-    end
-  end
-
-  # Groom hospital data
-  #   Not every incidence date has corresponding hospital data
-  #   Set any missing hospital data to zero
-  #
-  # Deprecated, as hospital data is no longer available as of 13 March 2021
-  def groom_hosp(data, only)
-    data.each do |county, frame|
-      next if !only.nil? && county != only
-      frame.data.each_key do |dstr|
-        frame.default_value(dstr, "HC", 0)
-        frame.default_value(dstr, "HS", 0)
-        frame.default_value(dstr, "HP", 0)
-        frame.default_value(dstr, "HB", 0)
-        frame.default_value(dstr, "IC", 0)
-        frame.default_value(dstr, "IS", 0)
-        frame.default_value(dstr, "IB", 0)
-      end
-    end
   end
 
   # Groom case data
