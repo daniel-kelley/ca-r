@@ -95,12 +95,14 @@ class CA_R
       #  - 1   area                         <data key> if area_type == County
       #  - 2   area_type
       #  0 3   population
-      #  1 4   deaths                       F
-      #  2 5   cumulative_deaths            D
-      #  3 6   total_tests
-      #  4 7   cumulative_total_tests
-      #  5 8   positive_tests               I
-      #  6 9   cumulative_positive_tests    C
+      #  1 4   cases
+      #  2 5   cumulative_cases
+      #  3 6   deaths                       F
+      #  4 7   cumulative_deaths            D
+      #  5 8   total_tests
+      #  6 9   cumulative_total_tests
+      #  7 10  positive_tests               I
+      #  8 11  cumulative_positive_tests    C
 
       error = 0
       county = row[1]
@@ -113,12 +115,14 @@ class CA_R
         raise 'oops' if row[1] != 'area'
         raise 'oops' if row[2] != 'area_type'
         raise 'oops' if row[3] != 'population'
-        raise 'oops' if row[4] != 'deaths'
-        raise 'oops' if row[5] != 'cumulative_deaths'
-        raise 'oops' if row[6] != 'total_tests'
-        raise 'oops' if row[7] != 'cumulative_total_tests'
-        raise 'oops' if row[8] != 'positive_tests'
-        raise 'oops' if row[9] != 'cumulative_positive_tests'
+        raise 'oops' if row[4] != 'cases'
+        raise 'oops' if row[5] != 'cumulative_cases'
+        raise 'oops' if row[6] != 'deaths'
+        raise 'oops' if row[7] != 'cumulative_deaths'
+        raise 'oops' if row[8] != 'total_tests'
+        raise 'oops' if row[9] != 'cumulative_total_tests'
+        raise 'oops' if row[10] != 'positive_tests'
+        raise 'oops' if row[11] != 'cumulative_positive_tests'
       end
 
       next if row[0].nil? # skip empty dates
@@ -159,10 +163,10 @@ class CA_R
         end
       end
 
-      data[county].set_value(dstr, "I", r[5].to_i)
-      data[county].set_value(dstr, "C", r[6].to_i)
-      data[county].set_value(dstr, "F", r[1].to_i)
-      data[county].set_value(dstr, "D", r[2].to_i)
+      data[county].set_value(dstr, "I", r[7].to_i)
+      data[county].set_value(dstr, "C", r[8].to_i)
+      data[county].set_value(dstr, "F", r[3].to_i)
+      data[county].set_value(dstr, "D", r[4].to_i)
       data[county].set_value(dstr, "E", error)
 
     end
