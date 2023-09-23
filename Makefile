@@ -15,6 +15,7 @@ all: out/app_data.js out/ca_color.js
 out/$(CASE_CSV):
 	test -d $(dir $@) || mkdir -p $(dir $@)
 	wget -O $@ $(CASE_SRC)
+	dos2unix $@
 
 out/process.R: out/$(CASE_CSV) bin/ca-incidence-all
 	bin/ca-incidence-all out/$(CASE_CSV) $(dir $<)
