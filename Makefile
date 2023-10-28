@@ -8,38 +8,42 @@ CASE_SRC := https://data.chhs.ca.gov/dataset/f333528b-4d38-4814-bebb-12db1f10f53
 
 CASE_CSV := $(notdir $(CASE_SRC))
 
-WS_DIR ?= ws
+BUILD := build
+OUT ?= $(BUILD)/out
+WS ?= $(BUILD)/ws
 
-all: out/app_data.js out/ca_color.js
+export OUT
 
-out/$(CASE_CSV):
+all: $(OUT)/app_data.js $(OUT)/ca_color.js
+
+$(OUT)/$(CASE_CSV):
 	test -d $(dir $@) || mkdir -p $(dir $@)
 	wget -O $@ $(CASE_SRC)
 	dos2unix $@
 
-out/process.R: out/$(CASE_CSV) bin/ca-incidence-all
-	bin/ca-incidence-all out/$(CASE_CSV) $(dir $<)
+$(OUT)/process.R: $(OUT)/$(CASE_CSV) bin/ca-incidence-all
+	bin/ca-incidence-all $(OUT)/$(CASE_CSV) $(dir $<)
 
-out/san_mateo_Data.yml: src/ca-r.R out/process.R src/si-config.R
+$(OUT)/san_mateo_Data.yml: src/ca-r.R $(OUT)/process.R src/si-config.R
 	R -q --vanilla -f $<
 
-out/app_data.js: out/san_mateo_Data.yml
+$(OUT)/app_data.js: $(OUT)/san_mateo_Data.yml
 	bin/ca-app-data $(dir $<)
 
-out/ci.R: bin/ca-ci out/san_mateo_R.yml
-	bin/ca-ci out/*_R.yml
+$(OUT)/ci.R: bin/ca-ci $(OUT)/san_mateo_R.yml
+	bin/ca-ci $(OUT)/*_R.yml
 
-out/ci_red.yml: out/ci.R
+$(OUT)/ci_red.yml: $(OUT)/ci.R
 	R -q --vanilla -f $<
 
-out/ca_color.js: bin/ca-color out/ci_red.yml out/ci_grn.yml
+$(OUT)/ca_color.js: bin/ca-color $(OUT)/ci_red.yml $(OUT)/ci_grn.yml
 	$+ $@
 
-release: out/app_data.js out/ca_color.js
-	test -d $(WS_DIR) || mkdir -p $(WS_DIR)
-	cp html/* out/* $(WS_DIR)
-	bin/change-date html/index.html out/DATE.txt $(WS_DIR)/index.html
+release: $(OUT)/app_data.js $(OUT)/ca_color.js
+	test -d $(WS) || mkdir -p $(WS)
+	cp html/* $(OUT)/* $(WS)
+	bin/change-date html/index.html $(OUT)/DATE.txt $(WS)/index.html
 
 clean:
-	-rm -rf out
+	-rm -rf $(OUT)
 
