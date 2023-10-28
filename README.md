@@ -4,9 +4,13 @@ California Covid-19 webapp builder
 # build
 make release
 
-default output in `pwd`/ws
+default output in `pwd`/build/ws
+
+# application dependencies
+
+make R ruby dos2unix
 
 # extra R packages
-install.packages("EpiEstim")
-install.packages("classInt")
+EpiEstim classInt zoo yaml svglite
 
+install.packages(<package>)
